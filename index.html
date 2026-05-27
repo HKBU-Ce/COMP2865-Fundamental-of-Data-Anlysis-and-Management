@@ -68,6 +68,7 @@
             padding: 10px;
             border-radius: 4px;
             font-weight: bold;
+            display: none; /* Hidden by default for JS-controlled messages */
         }
 
         .status-message.success {
@@ -80,6 +81,17 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+
+        /* Static warning message style */
+        .permanent-warning {
+            background-color: #fff3cd; /* Light yellow background */
+            color: #856404; /* Dark yellow text */
+            border: 1px solid #ffeeba;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
         }
 
         .sql-results {
@@ -130,6 +142,10 @@
                 <button id="load-db-btn">Load Database (.db)</button>
                 <input type="file" id="db-file-input" accept=".db" style="display: none;">
             </div>
+            <!-- Permanent warning message -->
+            <div class="permanent-warning">
+                **Important:** Remember to click "Save Database (.db)" to download your work. If you close or refresh this page without saving, your database changes will be lost!
+            </div>
         </div>
 
         <div id="status-message" class="status-message"></div>
@@ -146,6 +162,8 @@
     <!-- Embedded JavaScript -->
     <script>
         let db; // Global variable to hold the database instance
+        // hasUnsavedChanges and related logic are no longer needed for a static warning
+
         const sqlInput = document.getElementById('sql-input');
         const executeBtn = document.getElementById('execute-btn');
         const saveDbBtn = document.getElementById('save-db-btn');
@@ -191,7 +209,6 @@
                 `;
                 db.exec(initialSql);
                 showStatus('Initial data loaded. Try "SELECT * FROM students;"', 'success');
-
             } catch (err) {
                 console.error("Failed to initialize database:", err);
                 showStatus(`Error initializing database: ${err.message}`, 'error');
