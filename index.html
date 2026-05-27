@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Practice Webpage (Single File)</title>
+
+    <!-- Embedded CSS -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #0056b3;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        .controls {
+            margin-bottom: 25px;
+        }
+
+        #sql-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .buttons button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .sql-results {
+            margin-top: 20px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #fdfdfd;
+            overflow-x: auto; /* For wide tables */
+        }
+
+        .sql-results table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .sql-results th, .sql-results td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .sql-results th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .sql-results tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SQL Practice Environment</h1>
+
+        <div class="controls">
+            <textarea id="sql-input" placeholder="Enter your SQL commands here..." rows="10">
+-- The 'students' table has already been stored in the database.
+-- Example SQL:
+-- SELECT * FROM students;
+            </textarea>
+            <div class="buttons">
+                <button id="execute-btn">Execute SQL</button>
+                <button id="save-db-btn">Save Database (.db)</button>
+                <button id="load-db-btn">Load Database (.db)</button>
+                <input type="file" id="db-file-input" accept=".db" style="display: none;">
+            </div>
+        </div>
+
+        <div id="status-message" class="status-message"></div>
+
+        <h2>Results</h2>
+        <div id="sql-results" class="sql-results">
+            <p>Results will appear here.</p>
+        </div>
+    </div>
+
+    <!-- Load sql.js library from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+    <!-- Embedded JavaScript -->
+    <script>
+        let db; // Global variable to hold the database instance
+        const sqlInput = document.getElementById('sql-input');
+        const executeBtn = document.getElementById('execute-btn');
+        const saveDbBtn = document.getElementById('save-db-btn');
+        const loadDbBtn = document.getElementById('load-db-btn');
+        const dbFileInput = document.getElementById('db-file-input');
+        const sqlResultsDiv = document.getElementById('sql-results');
+        const statusMessageDiv = document.getElementById('status-message');
+
+        // Function to display status/error messages
+        function showStatus(message, type = 'success') {
+            statusMessageDiv.textContent = message;
+            statusMessageDiv.className = `status-message ${type}`;
+            statusMessageDiv.style.display = 'block';
+            setTimeout(() => {
+                statusMessageDiv.style.display = 'none';
+            }, 5000); // Hide after 5 seconds
+        }
+
+        // Function to initialize the database
+        async function initDatabase() {
+            try {
+                // sql.js needs to fetch the wasm file, so it's asynchronous
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+
+                // Create a new database instance (in-memory by default)
+                db = new SQL.Database();
+                showStatus('Database initialized successfully!', 'success');
+
+                // Execute some initial schema and data
+                const initialSql = `
+                    CREATE TABLE IF NOT EXISTS students (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        age INTEGER,
+                        major TEXT
+                    );
+                    INSERT INTO students (name, age, major) VALUES ('Alice', 20, 'Computer Science');
+                    INSERT INTO students (name, age, major) VALUES ('Bob', 22, 'Mathematics');
+                    INSERT INTO students (name, age, major) VALUES ('Charlie', 21, 'Physics');
+                    INSERT INTO students (name, age, major) VALUES ('Diana', 19, 'Biology');
+                `;
+                db.exec(initialSql);
+                showStatus('Initial data loaded. Try "SELECT * FROM students;"', 'success');
+
+            } catch (err) {
+                console.error("Failed to initialize database:", err);
+                showStatus(`Error initializing database: ${err.message}`, 'error');
+            }
+        }
+
+        // Function to execute SQL commands
+        function executeSql() {
+            const commands = sqlInput.value;
+            sqlResultsDiv.innerHTML = ''; // Clear previous results
+            statusMessageDiv.style.display = 'none'; // Clear previous status
+
+            if (!db) {
+                showStatus('Database not initialized. Please refresh the page.', 'error');
+                return;
+            }
+
+            try {
+                const results = db.exec(commands); // Execute the SQL
+
+                if (results.length === 0) {
+                    sqlResultsDiv.innerHTML = '<p>Command executed successfully. No rows returned (e.g., INSERT, UPDATE, DELETE).</p>';
+                    showStatus('SQL command executed successfully.', 'success');
+                    return;
+                }
+
+                results.forEach(result => {
+                    if (result.columns && result.values) {
+                        const table = document.createElement('table');
+                        const thead = document.createElement('thead');
+                        const tbody = document.createElement('tbody');
+
+                        // Create table header
+                        const headerRow = document.createElement('tr');
+                        result.columns.forEach(col => {
+                            const th = document.createElement('th');
+                            th.textContent = col;
+                            headerRow.appendChild(th);
+                        });
+                        thead.appendChild(headerRow);
+                        table.appendChild(thead);
+
+                        // Create table body
+                        result.values.forEach(row => {
+                            const tr = document.createElement('tr');
+                            row.forEach(value => {
+                                const td = document.createElement('td');
+                                td.textContent = value;
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                        table.appendChild(tbody);
+                        sqlResultsDiv.appendChild(table);
+                    }
+                });
+                showStatus('SQL command executed successfully, results displayed.', 'success');
+
+            } catch (err) {
+                console.error("SQL Error:", err);
+                sqlResultsDiv.innerHTML = `<p class="error-message">Error: ${err.message}</p>`;
+                showStatus(`SQL Error: ${err.message}`, 'error');
+            }
+        }
+
+        // Function to save the database to a .db file
+        function saveDatabase() {
+            if (!db) {
+                showStatus('No database to save.', 'error');
+                return;
+            }
+            try {
+                const data = db.export(); // Export the database as Uint8Array
+                const blob = new Blob([data], { type: 'application/x-sqlite3' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'practice.db'; // Default filename
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url); // Clean up the object URL
+
+                showStatus('Database saved to practice.db', 'success');
+            } catch (err) {
+                console.error("Error saving database:", err);
+                showStatus(`Error saving database: ${err.message}`, 'error');
+            }
+        }
+
+        // Function to load a database from a .db file
+        function loadDatabase(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                showStatus('No file selected.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const buffer = e.target.result;
+                    // Create a new database instance from the loaded buffer
+                    const SQL = await initSqlJs({
+                        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                    });
+                    db = new SQL.Database(new Uint8Array(buffer));
+                    showStatus(`Database "${file.name}" loaded successfully!`, 'success');
+                    sqlResultsDiv.innerHTML = '<p>Database loaded. Try "SELECT * FROM students;" or your custom tables.</p>';
+                } catch (err) {
+                    console.error("Error loading database:", err);
+                    showStatus(`Error loading database: ${err.message}`, 'error');
+                }
+            };
+            reader.onerror = (e) => {
+                console.error("FileReader error:", e);
+                showStatus('Error reading file.', 'error');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Event Listeners
+        executeBtn.addEventListener('click', executeSql);
+        saveDbBtn.addEventListener('click', saveDatabase);
+        loadDbBtn.addEventListener('click', () => dbFileInput.click()); // Trigger hidden file input
+        dbFileInput.addEventListener('change', loadDatabase);
+
+        // Initialize the database when the script loads
+        initDatabase();
+    </script>
+</body>
+</html>
