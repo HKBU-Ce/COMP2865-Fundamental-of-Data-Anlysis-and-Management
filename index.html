@@ -103,6 +103,22 @@
             overflow-x: auto; /* For wide tables */
         }
 
+        .executed-query {
+            margin-bottom: 15px;
+        }
+
+        .executed-query pre {
+            margin: 8px 0 0;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         .sql-results table {
             width: 100%;
             border-collapse: collapse;
@@ -215,12 +231,28 @@
             }
         }
 
+        function showExecutedQuery(sql) {
+            const queryBlock = document.createElement('div');
+            queryBlock.className = 'executed-query';
+
+            const label = document.createElement('strong');
+            label.textContent = 'Executed query:';
+
+            const pre = document.createElement('pre');
+            pre.textContent = sql.trim() || '(empty)';
+
+            queryBlock.appendChild(label);
+            queryBlock.appendChild(pre);
+            sqlResultsDiv.appendChild(queryBlock);
+        }
+
         // Function to execute SQL commands
         function executeSql() {
             const commands = sqlInput.value;
             sqlInput.value = ''; // Clear the query field after execute is clicked
             sqlResultsDiv.innerHTML = ''; // Clear previous results
             statusMessageDiv.style.display = 'none'; // Clear previous status
+            showExecutedQuery(commands);
 
             if (!db) {
                 showStatus('Database not initialized. Please refresh the page.', 'error');
@@ -231,7 +263,9 @@
                 const results = db.exec(commands); // Execute the SQL
 
                 if (results.length === 0) {
-                    sqlResultsDiv.innerHTML = '<p>Command executed successfully. No rows returned (e.g., INSERT, UPDATE, DELETE).</p>';
+                    const message = document.createElement('p');
+                    message.textContent = 'Command executed successfully. No rows returned (e.g., INSERT, UPDATE, DELETE).';
+                    sqlResultsDiv.appendChild(message);
                     showStatus('SQL command executed successfully.', 'success');
                     return;
                 }
@@ -270,7 +304,10 @@
 
             } catch (err) {
                 console.error("SQL Error:", err);
-                sqlResultsDiv.innerHTML = `<p class="error-message">Error: ${err.message}</p>`;
+                const errorP = document.createElement('p');
+                errorP.className = 'error-message';
+                errorP.textContent = `Error: ${err.message}`;
+                sqlResultsDiv.appendChild(errorP);
                 showStatus(`SQL Error: ${err.message}`, 'error');
             }
         }
