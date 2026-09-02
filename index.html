@@ -218,6 +218,7 @@
         // Function to execute SQL commands
         function executeSql() {
             const commands = sqlInput.value;
+            sqlInput.value = ''; // Clear the query field after execute is clicked
             sqlResultsDiv.innerHTML = ''; // Clear previous results
             statusMessageDiv.style.display = 'none'; // Clear previous status
 
