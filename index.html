@@ -198,6 +198,14 @@
             }, 5000); // Hide after 5 seconds
         }
 
+        // SQLite (sql.js) does not enforce FOREIGN KEY unless enabled per connection
+        function enableForeignKeys() {
+            if (!db) {
+                return;
+            }
+            db.run('PRAGMA foreign_keys = ON;');
+        }
+
         // Function to initialize the database
         async function initDatabase() {
             try {
@@ -208,6 +216,7 @@
 
                 // Create a new database instance (in-memory by default)
                 db = new SQL.Database();
+                enableForeignKeys();
                 showStatus('Database initialized successfully!', 'success');
 
                 // Execute some initial schema and data
@@ -355,6 +364,7 @@
                         locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
                     });
                     db = new SQL.Database(new Uint8Array(buffer));
+                    enableForeignKeys();
                     showStatus(`Database "${file.name}" loaded successfully!`, 'success');
                     sqlResultsDiv.innerHTML = '<p>Database loaded. Try "SELECT * FROM students;" or your custom tables.</p>';
                 } catch (err) {
